@@ -8,7 +8,7 @@ export default class SimplifiedForm {
      */
     private state : IState = {};
     private formName : string = 'default-form';
-    private verificationSchema : {[key: keyof IState]: any} = {};
+    private verificationSchema : {[key: string]: any} = {};
     
     /**
      * PUBLIC VARIABLES
@@ -18,7 +18,7 @@ export default class SimplifiedForm {
      */
     public verifyBeforeSubmission : boolean = true;
     public formValid : boolean = true;
-    public errors : {[key: keyof IState]: {message : string; error : boolean;}} = {};
+    public errors : {[key: string]: {message : string; error : boolean;}} = {};
 
     /**
      * @name BaseConstructor 
