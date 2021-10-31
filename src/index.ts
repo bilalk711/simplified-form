@@ -2,12 +2,23 @@ import { defaultSchemas } from "./regExConstants";
 import { IState } from "./interfaces/IState";
 
 export default class SimplifiedForm {
+    /**
+     * PRIVATE VARIABLES
+     * We don't want user to manipulate these directly
+     */
     private state : IState = {};
     private formName : string = 'default-form';
     private verificationSchema : {[key: keyof IState]: any} = {};
     
-    public formValid : boolean = false;
-    public errors : {[key: keyof IState]: any} = {};
+    /**
+     * PUBLIC VARIABLES
+     * These variables are allowed to be manipulated directly
+     * `errors` are directly exposed because 
+     * they are mostly concerned for providing informative outcome to user.
+     */
+    public verifyBeforeSubmission : boolean = true;
+    public formValid : boolean = true;
+    public errors : {[key: keyof IState]: {message : string; error : boolean;}} = {};
 
     /**
      * @name BaseConstructor 
@@ -15,9 +26,10 @@ export default class SimplifiedForm {
      * @param state 
      * @param formName 
      */
-    constructor(state: any, formName : string){
+    constructor(state: any, options : {formName : string; verifyBeforeSubmission ?: boolean;}){
        this.state = state;
-       this.formName = formName;
+       this.formName = options.formName || this.formName;
+       this.verifyBeforeSubmission = options.verifyBeforeSubmission || true;
     }
 
     /**
@@ -26,7 +38,24 @@ export default class SimplifiedForm {
      * @param verificationSchema 
      */
     public setVerification(verificationSchema: {[key: keyof IState]: any}){
-       this.verificationSchema = verificationSchema;
+       /**
+        * We check if the `verificationSchema` provided contains properties 
+        * that are subset of properties of the `state
+        */
+        if(Object.keys(verificationSchema).every((val: string) => Object.keys(this.state).includes(val))){
+        
+          /**
+           * Here we also set the `errors` object based on the provided schema
+           */
+          for(const key in verificationSchema){
+              this.errors[key] = { error : false, message : '' };
+          }
+
+          this.verificationSchema = verificationSchema;
+        }
+        else{
+          throw "Some or all properties of `verificationSchema` provided are invalid.";
+        }
     }
 
     /**
@@ -37,6 +66,27 @@ export default class SimplifiedForm {
     public field(fieldEvent: any) : void{
         const { name, value } = fieldEvent;
         this.state[name] = value;
+        // Verify the field against corressponding validation schema
+        if(this.verificationSchema[name]){
+            let ch = true;
+            // Check if corressponding schema is valid/invalid
+            if(this.verificationSchema[name] instanceof RegExp){
+               ch = this.verificationSchema[name].test(this.state[name]);
+            }
+            else if(typeof this.verificationSchema[name] === "string" && defaultSchemas[this.verificationSchema[name]]){
+               ch = defaultSchemas[this.verificationSchema[name]].test(this.state[name]);
+            }
+            else if(this.verifyBeforeSubmission){
+                throw "No/Invalid validation schema provided for the given field."
+            }
+            // Trigger the corressponding error on failure
+            if(!ch){
+                this.errors[name].error = true;
+            }
+            else{
+                this.errors[name].error = false;
+            }
+        }
     }
 
     /**
@@ -63,7 +113,11 @@ export default class SimplifiedForm {
      * @returns formValid
      */
     public verifyFormState(){
-        if(this.verificationSchema) {
+        let formValid = true;
+        if(Object.keys(this.verificationSchema).length !== 0 /*Check if `verificationSchema` is set or not.*/ ) {
+            /**
+             * Linear Algorithm where `n` equals number of properties of state
+             */
             for(const key of Object.keys(this.state)){
                 const fieldVal = this.state[key];
                 if(this.verificationSchema[key]){
@@ -75,19 +129,27 @@ export default class SimplifiedForm {
                     }
 
                     // If verification field is a string, it should be a key 
-                    // from the `defaultSchemas`
+                    // from the `defaultSchemas` otherwise no verification test is executed
                     else if(Object.keys(defaultSchemas).indexOf(this.verificationSchema[key]) !== -1){
                         ch = defaultSchemas[this.verificationSchema[key]].test(fieldVal); 
                     }
 
+                    // Trigger the corressponding error upon failure of verification
                     if(!ch) {
                         this.errors[key].error = true;
+                        formValid = false;
+                    }
+                    else{
+                        this.errors[key].error = false;                        
                     }
                 }
             }
         }
-        this.formValid = true;
-        return true;
+        else if(this.verifyBeforeSubmission){
+            throw "`verificationSchema` is not set. Please provide a schema using `setVerification` method."
+        }
+        this.formValid = formValid;
+        return formValid;
     }
 
     /**
@@ -100,15 +162,21 @@ export default class SimplifiedForm {
         // Array or Object type 
         if(errorMsgs instanceof Array){
             const errKeys = Object.keys(this.errors); 
+            /**
+             * Linear Algorithm where `n` equals number of properties of errors
+             */
             for(let i=0; i < errKeys.length; i++){
-                this.errors[errKeys[i]] = errorMsgs[i];
+                this.errors[errKeys[i]].message = errorMsgs[i];
             }
         }
 
         else if(errorMsgs instanceof Object){
+            /**
+             * Linear Algorithm where `n` equals number of items in `errorMsgs`
+             */
             for(const errorKey in errorMsgs){
                 if(this.errors[errorKey]){
-                    this.errors[errorKey] = errorMsgs[errorKey];
+                    this.errors[errorKey].message = errorMsgs[errorKey];
                 }
             }
         }
@@ -122,7 +190,7 @@ export default class SimplifiedForm {
      */
     public populateFormFromLocal(formName: string){
         if(typeof document === 'undefined') return;       
-        this.state = JSON.parse(formName);
+        this.state = JSON.parse(localStorage.getItem(formName) || '{}');
         this.formName = formName;
     }
 
@@ -136,3 +204,4 @@ export default class SimplifiedForm {
     }
 
 }
+
