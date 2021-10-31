@@ -48,13 +48,15 @@ export default class SimplifiedForm {
            * Here we also set the `errors` object based on the provided schema
            */
           for(const key in verificationSchema){
-              this.errors[key] = { error : false, message : '' };
+              if(this.errors[key]){
+                this.errors[key] = { error : false, message : '' };
+              }
           }
 
           this.verificationSchema = verificationSchema;
         }
         else{
-          throw "Some or all properties of `verificationSchema` provided are invalid.";
+          throw new Error("Some or all properties of `verificationSchema` provided are invalid.");
         }
     }
 
@@ -77,7 +79,7 @@ export default class SimplifiedForm {
                ch = defaultSchemas[this.verificationSchema[name]].test(this.state[name]);
             }
             else if(this.verifyBeforeSubmission){
-                throw "No/Invalid validation schema provided for the given field."
+                throw new Error("No/Invalid validation schema provided for the given field.");
             }
             // Trigger the corressponding error on failure
             if(!ch){
@@ -146,7 +148,7 @@ export default class SimplifiedForm {
             }
         }
         else if(this.verifyBeforeSubmission){
-            throw "`verificationSchema` is not set. Please provide a schema using `setVerification` method."
+            throw new Error("`verificationSchema` is not set. Please provide a schema using `setVerification` method.");
         }
         this.formValid = formValid;
         return formValid;
