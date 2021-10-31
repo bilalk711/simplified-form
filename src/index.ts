@@ -37,7 +37,7 @@ export default class SimplifiedForm {
      * @description Sets the verificationSchema to test the validation of form
      * @param verificationSchema 
      */
-    public setVerification(verificationSchema: {[key: keyof IState]: any}){
+    public setVerification(verificationSchema: {[key: string]: any}){
        /**
         * We check if the `verificationSchema` provided contains properties 
         * that are subset of properties of the `state
