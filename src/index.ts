@@ -4,11 +4,10 @@ import { IState } from "./interfaces/IState";
 export default class SimplifiedForm {
     private state : IState = {};
     private formName : string = 'default-form';
-    // Default Schemas, more can be added on requirement
     private verificationSchema : {[key: keyof IState]: any} = {};
     
     public formValid : boolean = false;
-    public errors : any = {};
+    public errors : {[key: keyof IState]: any} = {};
 
     /**
      * @name BaseConstructor 
@@ -26,7 +25,7 @@ export default class SimplifiedForm {
      * @description Sets the verificationSchema to test the validation of form
      * @param verificationSchema 
      */
-    public setVerification(verificationSchema: any){
+    public setVerification(verificationSchema: {[key: keyof IState]: any}){
        this.verificationSchema = verificationSchema;
     }
 
@@ -70,22 +69,50 @@ export default class SimplifiedForm {
                 if(this.verificationSchema[key]){
                     let ch : boolean = true;
 
-                    // Check if the verification field is Regex Expression 
+                    // Check if the verification field is a Regex Expression or not 
                     if(this.verificationSchema[key] instanceof RegExp){
                         ch = this.verificationSchema[key].test(fieldVal);
                     }
+
                     // If verification field is a string, it should be a key 
                     // from the `defaultSchemas`
                     else if(Object.keys(defaultSchemas).indexOf(this.verificationSchema[key]) !== -1){
                         ch = defaultSchemas[this.verificationSchema[key]].test(fieldVal); 
                     }
 
-                    if(!ch) return false;
+                    if(!ch) {
+                        this.errors[key].error = true;
+                    }
                 }
             }
         }
         this.formValid = true;
         return true;
+    }
+
+    /**
+     * @name setErrors
+     * @description Set the error messages for input fields
+     * @param errorMsgs 
+     */
+    public setErrors(errorMsgs: any){
+        // This method can take error messages in either
+        // Array or Object type 
+        if(errorMsgs instanceof Array){
+            const errKeys = Object.keys(this.errors); 
+            for(let i=0; i < errKeys.length; i++){
+                this.errors[errKeys[i]] = errorMsgs[i];
+            }
+        }
+
+        else if(errorMsgs instanceof Object){
+            for(const errorKey in errorMsgs){
+                if(this.errors[errorKey]){
+                    this.errors[errorKey] = errorMsgs[errorKey];
+                }
+            }
+        }
+
     }
 
     /**
