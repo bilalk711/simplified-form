@@ -64,7 +64,7 @@ export default class SimplifiedForm {
      */
     public verifyFormState(){
         if(this.verificationSchema) {
-            for(const key in this.state){
+            for(const key of Object.keys(this.state)){
                 const fieldVal = this.state[key];
                 if(this.verificationSchema[key]){
                     let ch : boolean = true;
