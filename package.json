@@ -1,6 +1,6 @@
 {
   "name": "simplified-form",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Simple forms library for handling common form handling tasks",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
